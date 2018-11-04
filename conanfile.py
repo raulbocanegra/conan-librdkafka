@@ -68,8 +68,13 @@ class LibRdKafkaConan(ConanFile):
         cmake.configure(build_folder=self.build_subfolder)
         return cmake
 
-    #def build_requirements(self):
-    #    self.build_requires("gtest/1.8.0@bincrafters/stable")   
+    def requirements(self):
+        if self.options.with_zlib:
+            self.requires("zlib/1.2.11@conan/stable")
+        if self.options.with_ssl:
+            self.requires("OpenSSL/1.1.0i@conan/stable")
+        if self.options.with_zstd:
+            self.requires("zstd/1.3.5@bincrafters/stable")
     
     def build(self):
         cmake = self.configure_cmake()
@@ -84,5 +89,6 @@ class LibRdKafkaConan(ConanFile):
         self.cpp_info.libs = tools.collect_libs(self)
         if self.settings.os == "Windows" and not self.options.shared:
             self.cpp_info.libs.append("crypt32")
+            self.cpp_info.defines = ["LIBRDKAFKA_STATICLIB"]
         elif self.settings.os == "Linux":
             self.cpp_info.libs.append("pthread")
