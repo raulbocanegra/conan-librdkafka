@@ -10,7 +10,7 @@ class LibRdKafkaConan(ConanFile):
     description = "The Apache Kafka C/C++ client library"
     url = "https://github.com/raulbocanegra/librdkafka"
     homepage = "https://github.com/edenhill/librdkafka"
-    license = "https://github.com/raulbocanegra/librdkafka"
+    license = "https://github.com/raulbocanegra/conan-librdkafka"
     exports = ["LICENSE.md"]
     exports_sources = ["CMakeLists.txt"]
     generators = "cmake"
@@ -24,9 +24,13 @@ class LibRdKafkaConan(ConanFile):
         "with_zlib": [True, False],
         "with_zstd": [True, False],
         "without_optimization": [True, False],
-        "without_win32config": [True, False]    
+        "build_testing": [True, False],
+        "build_examples": [True, False],
+        "enable_devel": [True, False],
+        "enable_refcnt_debug": [True, False],
+        "enable_sharedptr_debug": [True, False]
     }
-    default_options = "shared=False", "fPIC=True", "enable_testing=False", "enable_exceptions=True", "enable_lto=False", "enable_gtest_tests=True"
+    default_options = "shared=False", "fPIC=True", "with_plugins=False", "with_sasl=False", "with_ssl=False", "with_zlib=False", "with_zstd=False", "without_optimization=False", "build_testing=False", "build_examples=False", "enable_devel=False", "enable_refcnt_debug=False", "enable_sharedptr_debug=False"
 
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
@@ -34,27 +38,38 @@ class LibRdKafkaConan(ConanFile):
     def config_options(self):
         if self.settings.os == 'Windows':
             del self.options.fPIC
-            self.options.shared = False
-        if self.options.enable_testing == False:
-            self.options.enable_gtest_tests = False
+        if self.settings.build_type == 'Release':
+            self.options.enable_devel = False
+            self.options.enable_refcnt_debug = False
+            self.options.enable_sharedptr_debug = False
+            self.options.build_examples = False
 
-    def source(self):        
-        source_url = "https://github.com/google/benchmark"
+    def source(self):  
+        source_url = "https://github.com/edenhill/librdkafka"
         tools.get("{0}/archive/v{1}.zip".format(source_url, self.version))
-        extracted_dir = "benchmark-" + self.version
+        extracted_dir = "librdkafka-" + self.version
         os.rename(extracted_dir, self.source_subfolder)        
         
     def configure_cmake(self):
         cmake = CMake(self)        
-        cmake.definitions['BENCHMARK_ENABLE_TESTING'] = "ON" if self.options.enable_testing else "OFF"
-        cmake.definitions['BENCHMARK_ENABLE_GTEST_TESTS'] = "ON" if self.options.enable_gtest_tests and self.options.enable_testing else "OFF"
-        cmake.definitions['BENCHMARK_BUILD_32_BITS'] = "ON" if self.settings.arch == "x86" and self.settings.compiler != "Visual Studio"  else "OFF"
+        cmake.definitions['ENABLE_DEVEL'] = "ON" if self.options.enable_devel else "OFF"
+        cmake.definitions['ENABLE_REFCNT_DEBUG'] = "ON" if self.options.enable_refcnt_debug else "OFF"
+        cmake.definitions['ENABLE_SHAREDPTR_DEBUG'] = "ON" if self.options.enable_sharedptr_debug else "OFF"
+        cmake.definitions['RDKAFKA_BUILD_TESTS'] = "ON" if self.options.build_testing else "OFF"
+        cmake.definitions['RDKAFKA_BUILD_EXAMPLES'] = "ON" if self.options.build_examples else "OFF"
+        cmake.definitions['RDKAFKA_BUILD_STATIC'] = "ON" if not self.options.shared else "OFF"
+        cmake.definitions['WITH_PLUGINS'] = "ON" if self.options.with_plugins else "OFF"
+        cmake.definitions['WITH_SASL'] = "ON" if self.options.with_sasl else "OFF"
+        cmake.definitions['WITH_SSL'] = "ON" if self.options.with_ssl else "OFF"
+        cmake.definitions['WITH_ZLIB'] = "ON" if self.options.with_zlib else "OFF"
+        cmake.definitions['WITH_ZSTD'] = "ON" if self.options.with_zstd else "OFF"
+        cmake.definitions['WITHOUT_OPTIMIZATION'] = "ON" if self.options.without_optimization else "OFF"
 
         cmake.configure(build_folder=self.build_subfolder)
         return cmake
 
-    def build_requirements(self):
-        self.build_requires("gtest/1.8.0@bincrafters/stable")   
+    #def build_requirements(self):
+    #    self.build_requires("gtest/1.8.0@bincrafters/stable")   
     
     def build(self):
         cmake = self.configure_cmake()
@@ -67,7 +82,7 @@ class LibRdKafkaConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)
-        if self.settings.os == "Windows":
-            self.cpp_info.libs.append("Shlwapi")
+        if self.settings.os == "Windows" and not self.options.shared:
+            self.cpp_info.libs.append("crypt32")
         elif self.settings.os == "Linux":
             self.cpp_info.libs.append("pthread")
