@@ -30,7 +30,7 @@ class LibRdKafkaConan(ConanFile):
         "enable_refcnt_debug": [True, False],
         "enable_sharedptr_debug": [True, False]
     }
-    default_options = "shared=False", "fPIC=True", "with_plugins=False", "with_sasl=False", "with_ssl=False", "with_zlib=False", "with_zstd=False", "without_optimization=False", "build_testing=False", "build_examples=False", "enable_devel=False", "enable_refcnt_debug=False", "enable_sharedptr_debug=False"
+    default_options = "shared=False", "fPIC=True", "with_plugins=False", "with_sasl=False", "with_ssl=True", "with_zlib=True", "with_zstd=False", "without_optimization=False", "build_testing=False", "build_examples=False", "enable_devel=False", "enable_refcnt_debug=False", "enable_sharedptr_debug=False"
 
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
